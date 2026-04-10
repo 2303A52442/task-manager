@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Task Manager</title>
+    <meta name="description" content="A modern task manager to add, complete, and remove your daily tasks." />
+
+    <!-- Google Font: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <style>
+        /* =============================================
+           RESET & BASE
+        ============================================= */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f0f1a;
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 40px 20px 60px;
+        }
+
+        /* =============================================
+           PAGE HEADER
+        ============================================= */
+        .header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .header h1 {
+            font-size: 2.4rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #a78bfa, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+        }
+
+        .header p {
+            color: #94a3b8;
+            margin-top: 8px;
+            font-size: 0.95rem;
+        }
+
+        /* =============================================
+           OUTER WRAPPER (caps width)
+        ============================================= */
+        .page-wrapper {
+            max-width: 860px;
+            margin: 0 auto;
+        }
+
+        /* =============================================
+           ADD TASK CARD (full-width at top)
+        ============================================= */
+        .card {
+            background: #1e1e2e;
+            border: 1px solid #2d2d44;
+            border-radius: 16px;
+            padding: 28px;
+            margin-bottom: 36px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        .card h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #a78bfa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 18px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            background: #12121f;
+            border: 1px solid #2d2d44;
+            border-radius: 10px;
+            padding: 12px 16px;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+
+        .form-group input::placeholder,
+        .form-group textarea::placeholder {
+            color: #4a5568;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            border-color: #7c3aed;
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .btn-add {
+            background: linear-gradient(135deg, #7c3aed, #3b82f6);
+            color: #fff;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.15s;
+            letter-spacing: 0.3px;
+        }
+
+        .btn-add:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-add:active { transform: translateY(0); }
+
+        /* =============================================
+           TASK LIST SECTION HEADER
+        ============================================= */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .section-header h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #a78bfa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .task-count {
+            background: #2d2d44;
+            color: #94a3b8;
+            padding: 3px 10px;
+            border-radius: 99px;
+            font-size: 0.78rem;
+            font-weight: 500;
+        }
+
+        /* =============================================
+           EMPTY STATE
+        ============================================= */
+        .empty-state {
+            text-align: center;
+            padding: 48px 20px;
+            color: #4a5568;
+            background: #1e1e2e;
+            border: 1px solid #2d2d44;
+            border-radius: 16px;
+        }
+
+        .empty-state .icon {
+            font-size: 3rem;
+            margin-bottom: 14px;
+        }
+
+        .empty-state p {
+            font-size: 0.9rem;
+        }
+
+        /* =============================================
+           TWO-COLUMN TIMELINE LAYOUT
+        ============================================= */
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            position: relative;
+        }
+
+        /* Vertical line running through the center connector */
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 120px;           /* aligns with the connector dot */
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, #7c3aed44, #3b82f644);
+            border-radius: 2px;
+        }
+
+        .timeline-row {
+            display: grid;
+            grid-template-columns: 120px 16px 1fr;  /* date | dot | content */
+            gap: 0 16px;
+            align-items: flex-start;
+            padding: 6px 0;
+            position: relative;
+        }
+
+        /* ---- DATE COLUMN ---- */
+        .timeline-date {
+            text-align: right;
+            padding-top: 18px;
+            padding-right: 4px;
+        }
+
+        .timeline-date .month {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #7c3aed;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .timeline-date .day {
+            display: block;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #e2e8f0;
+            line-height: 1.1;
+        }
+
+        .timeline-date .year {
+            display: block;
+            font-size: 0.7rem;
+            color: #4a5568;
+        }
+
+        /* ---- CONNECTOR DOT ---- */
+        .timeline-dot {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 24px;
+            position: relative;
+        }
+
+        .timeline-dot::before {
+            content: '';
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #a78bfa, #60a5fa);
+            box-shadow: 0 0 8px rgba(167, 139, 250, 0.5);
+            flex-shrink: 0;
+            z-index: 1;
+        }
+
+        .timeline-row.done .timeline-dot::before {
+            background: #2d2d44;
+            box-shadow: none;
+        }
+
+        /* ---- CONTENT CARD ---- */
+        .task-card {
+            background: #1e1e2e;
+            border: 1px solid #2d2d44;
+            border-radius: 12px;
+            padding: 16px 18px;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            margin-bottom: 12px;
+            transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+        }
+
+        .task-card:hover {
+            border-color: #4a4a6a;
+            transform: translateX(3px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+
+        .timeline-row.done .task-card {
+            opacity: 0.5;
+        }
+
+        .task-body {
+            flex: 1;
+        }
+
+        .task-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #e2e8f0;
+            margin-bottom: 4px;
+            word-break: break-word;
+        }
+
+        .timeline-row.done .task-title {
+            text-decoration: line-through;
+            color: #718096;
+        }
+
+        .task-desc {
+            font-size: 0.82rem;
+            color: #64748b;
+            word-break: break-word;
+        }
+
+        /* ---- ACTION BUTTONS ---- */
+        .task-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+            align-items: center;
+        }
+
+        .btn-toggle,
+        .btn-delete {
+            border: none;
+            border-radius: 8px;
+            padding: 7px 13px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: opacity 0.2s, transform 0.15s;
+            display: inline-block;
+        }
+
+        .btn-toggle {
+            background: #1a3a2a;
+            color: #4ade80;
+            border: 1px solid #166534;
+        }
+
+        .timeline-row.done .btn-toggle {
+            background: #2d2d44;
+            color: #94a3b8;
+            border-color: #3d3d5c;
+        }
+
+        .btn-toggle:hover { opacity: 0.8; transform: translateY(-1px); }
+
+        .btn-delete {
+            background: #2d1a1a;
+            color: #f87171;
+            border: 1px solid #7f1d1d;
+        }
+
+        .btn-delete:hover { opacity: 0.8; transform: translateY(-1px); }
+
+        /* =============================================
+           FOOTER
+        ============================================= */
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 0.78rem;
+            color: #2d2d44;
+        }
+
+        /* =============================================
+           RESPONSIVE
+        ============================================= */
+        @media (max-width: 600px) {
+            .timeline::before { left: 70px; }
+
+            .timeline-row {
+                grid-template-columns: 70px 14px 1fr;
+                gap: 0 10px;
+            }
+
+            .timeline-date .day { font-size: 1.1rem; }
+            .timeline-date .month,
+            .timeline-date .year { font-size: 0.65rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- PAGE HEADER -->
+    <div class="header">
+        <h1>✅ Task Manager</h1>
+        <p>Stay organized. Add, complete, and remove your tasks.</p>
+    </div>
+
+    <div class="page-wrapper">
+
+        <!-- ============================================
+             ADD TASK FORM
+        ============================================= -->
+        <div class="card">
+            <h2>➕ New Task</h2>
+            <form action="/add" method="POST">
+                <div class="form-group">
+                    <input
+                        type="text"
+                        name="title"
+                        id="task-title"
+                        placeholder="Task title (required)"
+                        required
+                        autocomplete="off"
+                    />
+                    <textarea
+                        name="description"
+                        id="task-desc"
+                        placeholder="Description (optional)"
+                    ></textarea>
+                    <button type="submit" class="btn-add" id="btn-submit">
+                        + Add Task
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- ============================================
+             SECTION HEADER (count badge)
+        ============================================= -->
+        <div class="section-header">
+            <h2>📋 Your Tasks</h2>
+            <span class="task-count">{{ tasks | length }} task{{ 's' if tasks | length != 1 else '' }}</span>
+        </div>
+
+        <!-- ============================================
+             TASK TIMELINE (dates left, content right)
+        ============================================= -->
+        {% if tasks | length == 0 %}
+        <div class="empty-state">
+            <div class="icon">🗂️</div>
+            <p>No tasks yet. Add one above to get started!</p>
+        </div>
+
+        {% else %}
+        <div class="timeline" id="task-timeline">
+            {% for task in tasks %}
+            <div class="timeline-row {% if task.done %}done{% endif %}" id="task-{{ task.id }}">
+
+                <!-- LEFT: Date Column -->
+                <div class="timeline-date">
+                    {% if task.created_at %}
+                        {% set parts = task.created_at.split(' ') %}
+                        <span class="month">{{ parts[0] }}</span>
+                        <span class="day">{{ parts[1].rstrip(',') }}</span>
+                        <span class="year">{{ parts[2] }}</span>
+                    {% else %}
+                        <span class="month">—</span>
+                        <span class="day">—</span>
+                        <span class="year">—</span>
+                    {% endif %}
+                </div>
+
+                <!-- CENTER: Connector dot (vertical line is on the ::before of .timeline) -->
+                <div class="timeline-dot"></div>
+
+                <!-- RIGHT: Task Content -->
+                <div class="task-card">
+                    <div class="task-body">
+                        <div class="task-title">{{ task.title }}</div>
+                        {% if task.description %}
+                        <div class="task-desc">{{ task.description }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="task-actions">
+                        <a href="/toggle/{{ task.id }}" class="btn-toggle" id="toggle-{{ task.id }}">
+                            {% if task.done %}↩ Undo{% else %}✓ Done{% endif %}
+                        </a>
+                        <a href="/delete/{{ task.id }}" class="btn-delete" id="delete-{{ task.id }}"
+                           onclick="return confirm('Delete this task?')">
+                            🗑 Delete
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+    </div><!-- /.page-wrapper -->
+
+    <!-- FOOTER -->
+    <div class="footer">
+        Flask Task Manager &mdash; Running on port 5000
+    </div>
+
+</body>
+</html>
