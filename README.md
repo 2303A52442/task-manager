@@ -50,9 +50,10 @@ task-manager/
     └── index.html      # Frontend UI
 ```
 
-## Screenshots
+## Output Screenshots
 
-> Dark-mode timeline UI with date on left, task card on right.
+<img width="1825" height="851" alt="{0D27D428-E134-4EB1-B2BE-82F15E052789}" src="https://github.com/user-attachments/assets/e184c955-9343-430f-a46e-1e3af6dbe866" />
+
 
 ## License
 
