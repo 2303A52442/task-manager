@@ -110,7 +110,6 @@ http://127.0.0.1:5000
 
 ## ⚠️ Limitations
 
-* No user authentication
 * Uses basic UI (template-based)
 * Limited scalability
 
@@ -118,12 +117,10 @@ http://127.0.0.1:5000
 
 ## 🚀 Future Enhancements
 
-* Add user authentication (login/signup)
 * Integrate database (PostgreSQL/MySQL)
 * Implement REST APIs
 * Add CI/CD pipeline (GitHub Actions)
 * Improve UI with React or modern frameworks
-
 
 ---
 
@@ -132,4 +129,3 @@ http://127.0.0.1:5000
 👉 https://github.com/2303A52442/task-manager
 
 ---
-
