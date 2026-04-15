@@ -1,60 +1,135 @@
-# ✅ Task Manager
+# ✅ Task Manager (DevOps + Full Stack Project)
 
-A modern, Dockerized Task Manager web application built with **Python Flask** and **Vanilla CSS**.
+## 📌 Overview
 
-## Features
+This project is a web-based Task Manager application built using Flask. It allows users to create, update, and manage tasks efficiently. The application is containerized using Docker and deployed on a cloud platform (Render), demonstrating core DevOps practices.
 
-- ➕ Add tasks with title and optional description
-- ✓ Mark tasks as done / undo completion
-- 🗑 Delete tasks
-- 📅 Timeline layout — dates on the left, task content on the right
-- 🐳 Fully Dockerized for easy deployment
-- 💜 Dark-mode glassmorphism UI
+---
 
-## Tech Stack
+## 🚀 Live Demo
 
-| Layer    | Technology          |
-|----------|---------------------|
-| Backend  | Python 3.11 + Flask |
-| Frontend | HTML + Vanilla CSS  |
-| Deploy   | Docker              |
+👉 https://task-manager-bdr7.onrender.com
 
-## Getting Started
+---
 
-### Run Locally (without Docker)
+## 🛠️ Tech Stack
 
-```bash
-pip install -r requirements.txt
-python app.py
+* **Backend:** Flask (Python)
+* **Frontend:** HTML, CSS (Jinja Templates)
+* **Containerization:** Docker
+* **Deployment:** Render
+* **Version Control:** GitHub
+
+---
+
+## ✨ Features
+
+* Create new tasks
+* View all tasks
+* Update existing tasks
+* Delete tasks
+* Simple and clean UI
+* Deployed using Docker container
+
+---
+
+## 🧱 Project Structure
+
+```
+task-manager/
+│── templates/        # HTML templates
+│── app.py            # Main Flask application
+│── requirements.txt  # Dependencies
+│── Dockerfile        # Container configuration
+│── README.md         # Project documentation
 ```
 
-Visit `http://localhost:5000`
+---
 
-### Run with Docker
+## ⚙️ How It Works (Architecture)
+
+```
+User → Browser → Flask Application → Docker Container → Render Deployment
+```
+
+* User interacts via browser
+* Flask handles backend logic
+* Docker packages the application
+* Render hosts and runs the container
+
+---
+
+## 🐳 Docker Setup
+
+To run the project using Docker:
 
 ```bash
 docker build -t task-manager .
 docker run -p 5000:5000 task-manager
 ```
 
-Visit `http://localhost:5000`
+---
 
-## Project Structure
+## 💻 Local Setup
 
-```
-task-manager/
-├── app.py              # Flask backend (routes & logic)
-├── requirements.txt    # Python dependencies
-├── Dockerfile          # Docker image config
-└── templates/
-    └── index.html      # Frontend UI
+1. Clone the repository:
+
+```bash
+git clone https://github.com/2303A52442/task-manager.git
+cd task-manager
 ```
 
-## Output Screenshots
+2. Install dependencies:
 
-<img width="1825" height="851" alt="{0D27D428-E134-4EB1-B2BE-82F15E052789}" src="https://github.com/user-attachments/assets/e184c955-9343-430f-a46e-1e3af6dbe866" />
+```bash
+pip install -r requirements.txt
+```
+
+3. Run the application:
+
+```bash
+python app.py
+```
+
+4. Open in browser:
+
+```
+http://127.0.0.1:5000
+```
+
+---
+
+## 🔄 DevOps Practices Implemented
+
+* Containerization using Docker
+* Cloud deployment using Render
+* Version control with GitHub
+* Basic project structuring
+
+---
+
+## ⚠️ Limitations
+
+* No user authentication
+* Uses basic UI (template-based)
+* Limited scalability
+
+---
+
+## 🚀 Future Enhancements
+
+* Add user authentication (login/signup)
+* Integrate database (PostgreSQL/MySQL)
+* Implement REST APIs
+* Add CI/CD pipeline (GitHub Actions)
+* Improve UI with React or modern frameworks
 
 
-## License
+---
 
-MIT
+## 📎 Repository Link
+
+👉 https://github.com/2303A52442/task-manager
+
+---
+
