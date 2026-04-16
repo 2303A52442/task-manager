@@ -1,131 +1,83 @@
-# ✅ Task Manager (DevOps + Full Stack Project)
+# Task Manager
 
-## 📌 Overview
+This project now uses a React frontend with a Flask JSON API and an SQLite database. The old Jinja templates are no longer part of the runtime path; Flask now handles authentication, database-backed task storage, and API responses, while React renders the UI.
 
-This project is a web-based Task Manager application built using Flask. It allows users to create, update, and manage tasks efficiently. The application is containerized using Docker and deployed on a cloud platform (Render), demonstrating core DevOps practices.
+## Stack
 
----
+* React + Vite frontend
+* Flask backend API
+* SQLite database for users and tasks
+* Docker multi-stage build
 
-## 🚀 Live Demo
+## Features
 
-👉 https://task-manager-bdr7.onrender.com
+* Register and log in
+* Create, complete, and delete tasks
+* Session-based access control
+* Responsive React dashboard
 
----
-
-## 🛠️ Tech Stack
-
-* **Backend:** Flask (Python)
-* **Frontend:** HTML, CSS (Jinja Templates)
-* **Containerization:** Docker
-* **Deployment:** Render
-* **Version Control:** GitHub
-
----
-
-## ✨ Features
-
-* Create new tasks
-* View all tasks
-* Update existing tasks
-* Delete tasks
-* Simple and clean UI
-* Deployed using Docker container
-
----
-
-## 🧱 Project Structure
+## Project Structure
 
 ```
 task-manager/
-│── templates/        # HTML templates
-│── app.py            # Main Flask application
-│── requirements.txt  # Dependencies
-│── Dockerfile        # Container configuration
-│── README.md         # Project documentation
+├── app.py
+├── frontend/
+│   ├── index.html
+│   ├── package.json
+│   ├── src/
+│   │   ├── App.jsx
+│   │   ├── main.jsx
+│   │   └── styles.css
+│   └── vite.config.js
+├── requirements.txt
+├── Dockerfile
+└── README.md
 ```
 
----
+## Local Development
 
-## ⚙️ How It Works (Architecture)
+Install the Python backend dependency and the frontend packages.
 
+```bash
+pip install -r requirements.txt
+cd frontend
+npm install
 ```
-User → Browser → Flask Application → Docker Container → Render Deployment
+
+Run the Flask API in one terminal.
+
+```bash
+python app.py
 ```
 
-* User interacts via browser
-* Flask handles backend logic
-* Docker packages the application
-* Render hosts and runs the container
+Run the React dev server in another terminal.
 
----
+```bash
+cd frontend
+npm run dev
+```
 
-## 🐳 Docker Setup
+The Vite dev server proxies API calls to `http://127.0.0.1:5000`.
 
-To run the project using Docker:
+## Production Docker Build
 
 ```bash
 docker build -t task-manager .
 docker run -p 5000:5000 task-manager
 ```
 
----
+## API Endpoints
 
-## 💻 Local Setup
+* `GET /api/me`
+* `POST /api/register`
+* `POST /api/login`
+* `POST /api/logout`
+* `GET /api/tasks`
+* `POST /api/tasks`
+* `POST /api/tasks/<task_id>/toggle`
+* `DELETE /api/tasks/<task_id>`
 
-1. Clone the repository:
+## Notes
 
-```bash
-git clone https://github.com/2303A52442/task-manager.git
-cd task-manager
-```
-
-2. Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-3. Run the application:
-
-```bash
-python app.py
-```
-
-4. Open in browser:
-
-```
-http://127.0.0.1:5000
-```
-
----
-
-## 🔄 DevOps Practices Implemented
-
-* Containerization using Docker
-* Cloud deployment using Render
-* Version control with GitHub
-* Basic project structuring
-
----
-
-## ⚠️ Limitations
-
-* Uses basic UI (template-based)
-* Limited scalability
-
----
-
-## 🚀 Future Enhancements
-
-* Integrate database (PostgreSQL/MySQL)
-* Implement REST APIs
-* Add CI/CD pipeline (GitHub Actions)
-* Improve UI with React or modern frameworks
-
----
-
-## 📎 Repository Link
-
-👉 https://github.com/2303A52442/task-manager
-
----
+* Task and user data are stored in SQLite, so restarting the server keeps them as long as the database file remains.
+* The React app is served from the Flask process in production after the frontend build completes.

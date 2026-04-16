@@ -12,22 +12,18 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Pages
-        run: |
-          echo "Setting up GitHub Pages..."
-          sleep 2
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Frontend Dependencies
+        working-directory: frontend
+        run: npm ci
 
       - name: Build site
-        run: |
-          echo "Building site..."
-          sleep 5
+        working-directory: frontend
+        run: npm run build
 
       - name: Upload artifact
-        run: |
-          echo "Uploading artifact..."
-          sleep 3
-        
-      - name: Deploy to GitHub Pages
-        run: |
-          echo "Successfully deployed to GitHub Pages!"
-          sleep 2
+        run: echo "Built frontend artifact ready for deployment."

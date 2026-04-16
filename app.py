@@ -1,147 +1,256 @@
-# app.py - Main Flask Application for Task Manager
-# This file handles all backend logic and routes
-
-from flask import Flask, render_template, request, redirect, url_for, session, flash
-import uuid  # Used to generate unique IDs for each task
-from datetime import datetime  # Used to timestamp when a task is created
-from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
+import os
 import secrets
+import sqlite3
+import uuid
 
-# Initialize the Flask application
+from flask import Flask, jsonify, request, send_from_directory, session
+from werkzeug.security import check_password_hash, generate_password_hash
+
+
 app = Flask(__name__)
-app.secret_key = secrets.token_hex(16)
+app.secret_key = os.environ.get("SECRET_KEY", secrets.token_hex(16))
 
-# In-memory storage for tasks and users (no database needed)
-# Each task is a dictionary with: id, title, description, done status, username
-tasks = []
-users = {}  # Maps username -> hashed_password
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+FRONTEND_DIST = os.path.join(BASE_DIR, "frontend", "dist")
+DATABASE_PATH = os.environ.get("DATABASE_PATH", os.path.join(BASE_DIR, "task_manager.db"))
 
 
-# -----------------------------------------------
-# ROUTE: Register
-# -----------------------------------------------
-@app.route('/register', methods=['GET', 'POST'])
+def get_db_connection():
+    connection = sqlite3.connect(DATABASE_PATH)
+    connection.row_factory = sqlite3.Row
+    connection.execute("PRAGMA foreign_keys = ON")
+    return connection
+
+
+def init_db():
+    with get_db_connection() as connection:
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                username TEXT PRIMARY KEY,
+                password_hash TEXT NOT NULL
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS tasks (
+                id TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                description TEXT,
+                done INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL,
+                username TEXT NOT NULL,
+                FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
+            )
+            """
+        )
+
+
+def get_payload_value(key: str) -> str:
+    payload = request.get_json(silent=True) or request.form or {}
+    value = payload.get(key, "")
+    if isinstance(value, str):
+        return value.strip()
+    return value or ""
+
+
+def require_authentication():
+    username = session.get("username")
+    if not username:
+        return None, (jsonify({"message": "Authentication required."}), 401)
+    return username, None
+
+
+def user_tasks(username: str):
+    with get_db_connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT id, title, description, done, created_at
+            FROM tasks
+            WHERE username = ?
+            ORDER BY created_at DESC, id DESC
+            """,
+            (username,),
+        ).fetchall()
+
+    return [task_response(row) for row in rows]
+
+
+def task_response(task):
+    return {
+        "id": task["id"],
+        "title": task["title"],
+        "description": task["description"],
+        "done": bool(task["done"]),
+        "created_at": task["created_at"],
+    }
+
+
+@app.route("/api/me")
+def me():
+    username = session.get("username")
+    return jsonify({"authenticated": bool(username), "username": username})
+
+
+@app.route("/api/register", methods=["POST"])
 def register():
-    if request.method == 'POST':
-        username = request.form.get('username', '').strip()
-        password = request.form.get('password', '').strip()
-        
-        if not username or not password:
-            flash("Username and password are required.")
-            return redirect(url_for('register'))
-            
-        if username in users:
-            flash("Username already exists.")
-            return redirect(url_for('register'))
-            
-        users[username] = generate_password_hash(password)
-        flash("Registration successful! Please login.")
-        return redirect(url_for('login'))
-        
-    return render_template('register.html')
+    username = get_payload_value("username")
+    password = get_payload_value("password")
 
-# -----------------------------------------------
-# ROUTE: Login
-# -----------------------------------------------
-@app.route('/login', methods=['GET', 'POST'])
+    if not username or not password:
+        return jsonify({"message": "Username and password are required."}), 400
+
+    password_hash = generate_password_hash(password)
+
+    try:
+        with get_db_connection() as connection:
+            connection.execute(
+                "INSERT INTO users (username, password_hash) VALUES (?, ?)",
+                (username, password_hash),
+            )
+    except sqlite3.IntegrityError:
+        return jsonify({"message": "Username already exists."}), 409
+
+    return jsonify({"message": "Registration successful. Please log in."}), 201
+
+
+@app.route("/api/login", methods=["POST"])
 def login():
-    if request.method == 'POST':
-        username = request.form.get('username', '').strip()
-        password = request.form.get('password', '').strip()
-        
-        if username in users and check_password_hash(users[username], password):
-            session['username'] = username
-            return redirect(url_for('index'))
-            
-        flash("Invalid username or password.")
-        return redirect(url_for('login'))
-        
-    return render_template('login.html')
+    username = get_payload_value("username")
+    password = get_payload_value("password")
 
-# -----------------------------------------------
-# ROUTE: Logout
-# -----------------------------------------------
-@app.route('/logout')
+    with get_db_connection() as connection:
+        user = connection.execute(
+            "SELECT password_hash FROM users WHERE username = ?",
+            (username,),
+        ).fetchone()
+
+    if user and check_password_hash(user["password_hash"], password):
+        session["username"] = username
+        return jsonify({"message": "Login successful.", "username": username})
+
+    return jsonify({"message": "Invalid username or password."}), 401
+
+
+@app.route("/api/logout", methods=["POST", "GET"])
 def logout():
-    session.pop('username', None)
-    return redirect(url_for('login'))
-
-# -----------------------------------------------
-# ROUTE: Home - View all tasks
-# -----------------------------------------------
-@app.route('/')
-def index():
-    """Display all tasks on the home page."""
-    if 'username' not in session:
-        return redirect(url_for('login'))
-        
-    user_tasks = [t for t in tasks if t.get('username') == session['username']]
-    return render_template('index.html', tasks=user_tasks, username=session['username'])
+    session.pop("username", None)
+    return jsonify({"message": "Logged out successfully."})
 
 
-# -----------------------------------------------
-# ROUTE: Add a new task
-# -----------------------------------------------
-@app.route('/add', methods=['POST'])
-def add_task():
-    """Receive form data and add a new task to the list."""
-    if 'username' not in session:
-        return redirect(url_for('login'))
+@app.route("/api/tasks", methods=["GET", "POST"])
+def tasks_endpoint():
+    username, error_response = require_authentication()
+    if error_response:
+        return error_response
 
-    title = request.form.get('title', '').strip()
-    description = request.form.get('description', '').strip()
+    if request.method == "GET":
+        return jsonify({"tasks": user_tasks(username)})
 
-    # Only add the task if a title was provided
-    if title:
-        task = {
-            'id': str(uuid.uuid4()),   # Unique ID for each task
-            'title': title,
-            'description': description,
-            'done': False,             # All tasks start as not done
-            'created_at': datetime.now().strftime('%b %d, %Y'),  # Human-readable date
-            'username': session['username']
-        }
-        tasks.append(task)
+    title = get_payload_value("title")
+    description = get_payload_value("description")
 
-    # Redirect back to the home page after adding
-    return redirect(url_for('index'))
+    if not title:
+        return jsonify({"message": "Task title is required."}), 400
+
+    task = {
+        "id": str(uuid.uuid4()),
+        "title": title,
+        "description": description,
+        "done": 0,
+        "created_at": datetime.now().isoformat(timespec="seconds"),
+        "username": username,
+    }
+
+    with get_db_connection() as connection:
+        connection.execute(
+            """
+            INSERT INTO tasks (id, title, description, done, created_at, username)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                task["id"],
+                task["title"],
+                task["description"],
+                task["done"],
+                task["created_at"],
+                task["username"],
+            ),
+        )
+
+    return jsonify({"task": task_response(task)}), 201
 
 
-# -----------------------------------------------
-# ROUTE: Toggle task completion
-# -----------------------------------------------
-@app.route('/toggle/<task_id>')
+@app.route("/api/tasks/<task_id>/toggle", methods=["POST"])
 def toggle_task(task_id):
-    """Mark a task as done or not done."""
-    if 'username' not in session:
-        return redirect(url_for('login'))
+    username, error_response = require_authentication()
+    if error_response:
+        return error_response
 
-    for task in tasks:
-        if task['id'] == task_id and task.get('username') == session['username']:
-            task['done'] = not task['done']  # Flip the done status
-            break
-    return redirect(url_for('index'))
+    with get_db_connection() as connection:
+        task = connection.execute(
+            """
+            SELECT id, title, description, done, created_at
+            FROM tasks
+            WHERE id = ? AND username = ?
+            """,
+            (task_id, username),
+        ).fetchone()
+
+        if task is None:
+            return jsonify({"message": "Task not found."}), 404
+
+        new_done = 0 if task["done"] else 1
+        connection.execute(
+            "UPDATE tasks SET done = ? WHERE id = ? AND username = ?",
+            (new_done, task_id, username),
+        )
+
+    task_data = dict(task)
+    task_data["done"] = new_done
+    return jsonify({"task": task_response(task_data)})
 
 
-# -----------------------------------------------
-# ROUTE: Delete a task
-# -----------------------------------------------
-@app.route('/delete/<task_id>')
+@app.route("/api/tasks/<task_id>", methods=["DELETE"])
 def delete_task(task_id):
-    """Remove a task from the list by its ID."""
-    if 'username' not in session:
-        return redirect(url_for('login'))
+    username, error_response = require_authentication()
+    if error_response:
+        return error_response
 
-    global tasks
-    # Keep all tasks EXCEPT the one with the matching ID for this user
-    tasks = [task for task in tasks if not (task['id'] == task_id and task.get('username') == session['username'])]
-    return redirect(url_for('index'))
+    with get_db_connection() as connection:
+        cursor = connection.execute(
+            "DELETE FROM tasks WHERE id = ? AND username = ?",
+            (task_id, username),
+        )
+
+    if cursor.rowcount == 0:
+        return jsonify({"message": "Task not found."}), 404
+
+    return jsonify({"message": "Task deleted."})
 
 
-# -----------------------------------------------
-# Run the application
-# -----------------------------------------------
-if __name__ == '__main__':
-    # host='0.0.0.0' makes the app accessible from outside the container
-    # debug=False is recommended for production/Docker use
-    app.run(host='0.0.0.0', port=5000, debug=False)
+def serves_frontend_asset(path: str) -> bool:
+    return bool(path) and os.path.isfile(os.path.join(FRONTEND_DIST, path))
+
+
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
+def serve_spa(path):
+    if path == "api" or path.startswith("api/"):
+        return jsonify({"message": "Not found."}), 404
+
+    if os.path.isdir(FRONTEND_DIST):
+        if serves_frontend_asset(path):
+            return send_from_directory(FRONTEND_DIST, path)
+        return send_from_directory(FRONTEND_DIST, "index.html")
+
+    return jsonify({"message": "React frontend build not found. Run the frontend build first."}), 500
+
+
+init_db()
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)

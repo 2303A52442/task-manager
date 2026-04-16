@@ -1,21 +1,25 @@
-# Dockerfile - Instructions to build the Docker image for Task Manager
+FROM node:20-alpine AS frontend-build
 
-# Step 1: Use official lightweight Python image as the base
+WORKDIR /app/frontend
+
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+
+COPY frontend ./
+RUN npm run build
+
 FROM python:3.11-slim
 
-# Step 2: Set the working directory inside the container
 WORKDIR /app
 
-# Step 3: Copy the requirements file and install dependencies
-# (Doing this before copying the rest of the app allows Docker to cache this layer)
-COPY requirements.txt .
+ENV PYTHONUNBUFFERED=1
+
+COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Step 4: Copy all project files into the container
-COPY . .
+COPY app.py ./
+COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
-# Step 5: Expose port 5000 so it can be accessed from outside the container
 EXPOSE 5000
 
-# Step 6: Define the command to run the application
 CMD ["python", "app.py"]

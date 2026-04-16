@@ -1,47 +1,29 @@
-name: build
+name: React Build
 
 on:
   push:
     branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
-  build:
+  build-frontend:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Show repository structure
-        run: ls -R
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-
-      - name: Install Backend Dependencies
-        run: |
-          mkdir -p backend
-          cd backend
-          npm init -y
-          npm install
-
-      - name: Run Backend Tests
-        run: |
-          cd backend
-          npm pkg set scripts.test="echo 'Tests passing successfully!'"
-          npm test
+          node-version: '20'
 
       - name: Install Frontend Dependencies
+        working-directory: frontend
         run: |
-          mkdir -p frontend
-          cd frontend
-          npm init -y
-          npm install
+          npm ci
 
       - name: Build React App
-        run: |
-          cd frontend
-          npm pkg set scripts.build="echo 'React App Built Successfully!'"
-          npm run build
+        working-directory: frontend
+        run: npm run build

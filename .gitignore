@@ -23,3 +23,6 @@ build/
 .DS_Store
 Thumbs.db
 tasks.json
+frontend/node_modules/
+frontend/dist/
+task_manager.db
