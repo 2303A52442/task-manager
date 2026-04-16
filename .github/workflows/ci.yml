@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      DATABASE_PATH: ${{ runner.temp }}/task_manager_ci.db
+      DATABASE_PATH: ${{ github.workspace }}/task_manager_ci.db
       SECRET_KEY: ci-secret-key
 
     steps:
