@@ -55,3 +55,18 @@ jobs:
       - name: Build Docker Image
         run: |
           docker build -t task-manager .
+
+      - name: Build Site Artifact
+        working-directory: frontend
+        run: |
+          npm run build
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: react-build
+          path: frontend/dist
+
+      - name: Publish Summary
+        run: |
+          echo "All backend, database, frontend, build, and artifact steps completed successfully."
